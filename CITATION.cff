@@ -65,6 +65,7 @@ references:
   identifiers:
   - type: other
     value: '36193886'
+    description: PMID
 - type: article
   title: 'The brain imaging data structure, a format for organizing and describing outputs of neuroimaging experiments'
   authors:
@@ -131,6 +132,7 @@ references:
   identifiers:
   - type: other
     value: '27326542'
+    description: PMID
 - type: article
   title: 'SPARC Data Structure: Rationale and Design of a FAIR Standard for Biomedical Research Data'
   authors:
@@ -217,6 +219,7 @@ references:
   identifiers:
   - type: other
     value: '32939066'
+    description: PMID
 - type: article
   title: 'Matplotlib: A 2D Graphics Environment'
   authors:

@@ -191,8 +191,10 @@ results in `validation/d349-results.txt`). The `stim_timing` line alone, before 
 gives 1550 pulses (= 5 s × (2 + 10 + 20 + 30) Hz × 5 amplitudes), rates of exactly 2, 10, 20 and 30 Hz,
 5.000 s trains and a 500 µs pulse width from the start/end blips, all equal to the HDF5 attributes:
 no table vs channel disagreement. After the merge, all 20 rows carry the attributes' current, rate,
-width, duration and polarity, and `n_pulses` = rate × duration. Onsets fall 12.3 to 15.0 ms (median
-13.5 ms) before the time in each trial group's name. QC flags
+width, duration and polarity, and `n_pulses` = rate × duration. Onsets fall 11.6 to 14.2 ms (median
+13.0 ms) before the time in each trial group's name (measured on the source's own time stamps;
+`validate_349.py` reports 12.3 to 15.0 ms because recordings.csv `start_time` is rounded to the
+millisecond). QC flags
 7 trains that start 4.2–10.0 s after the previous one ends: their 10 s pre-stimulus windows include
 the previous train (the trials' recorded windows overlap in this dataset).
 
