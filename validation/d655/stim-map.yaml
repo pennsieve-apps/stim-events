@@ -1,0 +1,15 @@
+# Discover dataset 655 (rat, closed-loop heart-rate control by vagus stimulation and kilohertz block).
+# 4 StimAmp: the perturbation electrode (a 10 min 1 -> 30 -> 1 Hz ramp); 5 CtrlAmp: the control
+# electrode, positive = stimulation, negative = kilohertz-frequency block (dataset README).
+# The exported values have no unit (amplitude_unit stays n/a).
+version: 1
+channels:
+  - match: CtrlAmp
+    kind: envelope
+    site: right cervical vagus (distal, control electrode)
+    positive: {trial_type: stimulation, waveform: biphasic}
+    negative: {trial_type: block, waveform: kilohertz}
+  - match: StimAmp
+    kind: envelope
+    site: right cervical vagus (proximal, perturbation electrode)
+    set: {pulse_width_us: 50, waveform: biphasic}

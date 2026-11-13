@@ -1,0 +1,4 @@
+recording | gain | controller on (s) | ramp start | ramp length (s) | ctrl on -> ramp (s) | ramp end -> ctrl off (s) | stim / block epochs | earlier perturbation-electrode epoch
+sub-Bimodal01_ses-set01-trial01-gain02_rec-csv | gain02 | 122.9 | 246.2 | 593.9 | 123.3 | 2.8 | 1 / 1
+sub-Bimodal01_ses-set01-trial02-gain05_rec-csv | gain05 | 260.6 | 384.7 | 593.9 | 124.1 | 121.8 | 2 / 1 | initial perturbation-electrode epoch 47.7 s for 44.0 s
+sub-Bimodal01_ses-set01-trial03-gain10_rec-csv | gain10 | 245.2 | 370.0 | 593.9 | 124.8 | 121.7 | 2 / 1 | initial perturbation-electrode epoch 63.6 s for 61.0 s

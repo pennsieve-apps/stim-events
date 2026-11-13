@@ -1,0 +1,294 @@
+cff-version: 1.2.0
+message: If you use this app, please cite it and the works it builds on, listed under references.
+type: software
+title: stim-events
+abstract: Finds the stimulation epochs of physiological recordings and their parameters (amplitude and unit,
+  pulse width, pulse rate, train duration, duty cycle on/off, number of pulses, polarity, waveform, site,
+  contact, condition) and writes them as one BIDS-style events.tsv, for nerve stimulation and
+  neuromodulation experiments in any species. Reads trigger/TTL lines, stimulus monitors and parameter
+  envelope channels of NWB files (as written by physio-import), per-trial parameters stored with the
+  recording, user parameter tables (CSV/XLSX) described by a stim-map.yaml, imported markers, file and
+  folder names, and, optionally, SPARC Data Structure metadata; merges them by priority and reports
+  overlapping trains, trains without a clean baseline and table vs channel disagreements. One step of
+  the Cardiovascular Response to Nerve Stimulation workflow. Research outputs.
+authors:
+- name: Pennsieve (University of Pennsylvania)
+contact:
+- given-names: Joost
+  family-names: Wagenaar
+  orcid: https://orcid.org/0009-0004-5925-5451
+  affiliation: University of Pennsylvania
+repository-code: https://github.com/pennsieve-apps/stim-events
+license: Apache-2.0
+keywords:
+- physiology
+- autonomic
+- cardiovascular
+- neuromodulation
+- nerve-stimulation
+- vagus-nerve-stimulation
+- electrophysiology
+- nwb
+references:
+- type: article
+  title: The Neurodata Without Borders ecosystem for neurophysiological data science
+  authors:
+  - family-names: Rübel
+    given-names: Oliver
+  - family-names: Tritt
+    given-names: Andrew
+  - family-names: Ly
+    given-names: Ryan
+  - family-names: Dichter
+    given-names: Benjamin K
+  - family-names: Ghosh
+    given-names: Satrajit
+  - family-names: Niu
+    given-names: Lawrence
+  - family-names: Baker
+    given-names: Pamela
+  - family-names: Soltesz
+    given-names: Ivan
+  - family-names: Ng
+    given-names: Lydia
+  - family-names: Svoboda
+    given-names: Karel
+  - family-names: Frank
+    given-names: Loren
+  - family-names: Bouchard
+    given-names: Kristofer E
+  year: 2022
+  journal: eLife
+  volume: 11
+  start: 'e78362'
+  doi: 10.7554/elife.78362
+  identifiers:
+  - type: other
+    value: '36193886'
+- type: article
+  title: 'The brain imaging data structure, a format for organizing and describing outputs of neuroimaging experiments'
+  authors:
+  - family-names: Gorgolewski
+    given-names: Krzysztof J.
+  - family-names: Auer
+    given-names: Tibor
+  - family-names: Calhoun
+    given-names: Vince D.
+  - family-names: Craddock
+    given-names: R. Cameron
+  - family-names: Das
+    given-names: Samir
+  - family-names: Duff
+    given-names: Eugene P.
+  - family-names: Flandin
+    given-names: Guillaume
+  - family-names: Ghosh
+    given-names: Satrajit S.
+  - family-names: Glatard
+    given-names: Tristan
+  - family-names: Halchenko
+    given-names: Yaroslav O.
+  - family-names: Handwerker
+    given-names: Daniel A.
+  - family-names: Hanke
+    given-names: Michael
+  - family-names: Keator
+    given-names: David
+  - family-names: Li
+    given-names: Xiangrui
+  - family-names: Michael
+    given-names: Zachary
+  - family-names: Maumet
+    given-names: Camille
+  - family-names: Nichols
+    given-names: B. Nolan
+  - family-names: Nichols
+    given-names: Thomas E.
+  - family-names: Pellman
+    given-names: John
+  - family-names: Poline
+    given-names: Jean-Baptiste
+  - family-names: Rokem
+    given-names: Ariel
+  - family-names: Schaefer
+    given-names: Gunnar
+  - family-names: Sochat
+    given-names: Vanessa
+  - family-names: Triplett
+    given-names: William
+  - family-names: Turner
+    given-names: Jessica A.
+  - family-names: Varoquaux
+    given-names: Gaël
+  - family-names: Poldrack
+    given-names: Russell A.
+  year: 2016
+  journal: Scientific Data
+  volume: 3
+  issue: '1'
+  start: '160044'
+  doi: 10.1038/sdata.2016.44
+  identifiers:
+  - type: other
+    value: '27326542'
+- type: article
+  title: 'SPARC Data Structure: Rationale and Design of a FAIR Standard for Biomedical Research Data'
+  authors:
+  - family-names: Bandrowski
+    given-names: Anita
+  - family-names: Grethe
+    given-names: Jeffrey S.
+  - family-names: Pilko
+    given-names: Anna
+  - family-names: Gillespie
+    given-names: Tom
+  - family-names: Pine
+    given-names: Gabi
+  - family-names: Patel
+    given-names: Bhavesh
+  - family-names: Surles-Zeigler
+    given-names: Monique
+  - family-names: Martone
+    given-names: Maryann E.
+  year: 2021
+  doi: 10.1101/2021.02.10.430563
+- type: article
+  title: Array programming with NumPy
+  authors:
+  - family-names: Harris
+    given-names: Charles R.
+  - family-names: Millman
+    given-names: K. Jarrod
+  - family-names: van der Walt
+    given-names: Stéfan J.
+  - family-names: Gommers
+    given-names: Ralf
+  - family-names: Virtanen
+    given-names: Pauli
+  - family-names: Cournapeau
+    given-names: David
+  - family-names: Wieser
+    given-names: Eric
+  - family-names: Taylor
+    given-names: Julian
+  - family-names: Berg
+    given-names: Sebastian
+  - family-names: Smith
+    given-names: Nathaniel J.
+  - family-names: Kern
+    given-names: Robert
+  - family-names: Picus
+    given-names: Matti
+  - family-names: Hoyer
+    given-names: Stephan
+  - family-names: van Kerkwijk
+    given-names: Marten H.
+  - family-names: Brett
+    given-names: Matthew
+  - family-names: Haldane
+    given-names: Allan
+  - family-names: del Río
+    given-names: Jaime Fernández
+  - family-names: Wiebe
+    given-names: Mark
+  - family-names: Peterson
+    given-names: Pearu
+  - family-names: Gérard-Marchant
+    given-names: Pierre
+  - family-names: Sheppard
+    given-names: Kevin
+  - family-names: Reddy
+    given-names: Tyler
+  - family-names: Weckesser
+    given-names: Warren
+  - family-names: Abbasi
+    given-names: Hameer
+  - family-names: Gohlke
+    given-names: Christoph
+  - family-names: Oliphant
+    given-names: Travis E.
+  year: 2020
+  journal: Nature
+  volume: 585
+  issue: '7825'
+  start: '357'
+  end: '362'
+  doi: 10.1038/s41586-020-2649-2
+  identifiers:
+  - type: other
+    value: '32939066'
+- type: article
+  title: 'Matplotlib: A 2D Graphics Environment'
+  authors:
+  - family-names: Hunter
+    given-names: John D.
+  year: 2007
+  journal: 'Computing in Science & Engineering'
+  volume: 9
+  issue: '3'
+  start: '90'
+  end: '95'
+  doi: 10.1109/mcse.2007.55
+- type: software
+  title: h5py
+  authors:
+  - name: Andrew Collette and the h5py contributors
+  version: 3.16.0
+  repository-code: https://github.com/h5py/h5py
+  license: BSD-3-Clause
+- type: software
+  title: openpyxl
+  authors:
+  - name: Charlie Clark and the openpyxl contributors
+  version: 3.1.5
+  url: https://openpyxl.readthedocs.io
+  license: MIT
+- type: software
+  title: PyYAML
+  authors:
+  - name: Kirill Simonov and the PyYAML contributors
+  version: 6.0.3
+  repository-code: https://github.com/yaml/pyyaml
+  license: MIT
+- type: data
+  title: Influence of vagus nerve stimulation on cardiac activity in pigs
+  authors:
+  - family-names: Armitage
+    given-names: Oliver
+  - family-names: Sarkans
+    given-names: Elvijs
+  - family-names: Wernisch
+    given-names: Lorenz
+  - family-names: Fortier-Poisson
+    given-names: Pascal
+  - family-names: Berthon
+    given-names: Antonin
+  - family-names: Tessier-Larivière
+    given-names: Olivier
+  year: 2023
+  publisher:
+    name: SPARC Portal
+  doi: 10.26275/dm5l-tspb
+  license: CC-BY-4.0
+- type: data
+  title: Single-electrode bidirectional control of heart rate via vagus nerve modulation in rat model
+  authors:
+  - family-names: Bender
+    given-names: Shane A
+  - family-names: Green
+    given-names: David B
+  - family-names: Thakkar
+    given-names: Varun S
+  - family-names: Zimmerman
+    given-names: Hope L
+  - family-names: Elazab
+    given-names: Mohamed
+  - family-names: Kilgore
+    given-names: Kevin L
+  - family-names: Vrabec
+    given-names: Tina L
+  year: 2026
+  publisher:
+    name: SPARC Portal
+  doi: 10.26275/5cwo-mkpz
+  license: CC-BY-4.0

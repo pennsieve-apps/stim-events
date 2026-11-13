@@ -567,7 +567,7 @@ def process(rec: I.Recording, prm: dict, smap: SM.StimMap, tables: TableSet, sds
                              timing=kind)
                 ev.add(kind, p, origin=f"{kind} channel {ch.name}")
                 ev.channel_epochs.append(e)
-                ev.extras["_channel"] = ch.name
+                ev.extras["_channel"] = original or ch.name
                 for n in e.notes:
                     qc.append([rid, "channel_note", ch.name, f"train at {e.onset:.3f} s: {n}"])
                 ch_events.append(ev)
@@ -896,7 +896,7 @@ def main() -> int:
                 figures.append({"path": f"figures/{name}", "caption": (
                     f"{rid}: every stimulation train found, as a bar from its onset to its end on the recording's time "
                     "axis" + (", one row per pulse frequency" if "frequency_hz" in vary else ", one row per source")
-                    + ", coloured by amplitude" + (" (purple: kilohertz block epochs)" if n["block"] else "")
+                    + ", coloured by amplitude" + (" (hatched grey: block epochs, e.g. kilohertz block)" if n["block"] else "")
                     + ". Check that the number and order of trains match the protocol, that amplitudes step as "
                     "planned, and look for red outlines: trains that overlap another one. "
                     + (f"Parameters that vary: {', '.join(vary)}. " if vary else "")

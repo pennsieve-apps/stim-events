@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib import colors as mcolors  # noqa: E402
 
 RESEARCH = "Research output, not a clinical finding."
-TYPE_COLOURS = {"block": "#7f3c8d", "baseline": "#9e9e9e", "condition": "#c9d7e8"}
+TYPE_COLOURS = {"block": "#e8e8e8", "baseline": "#9e9e9e", "condition": "#c9d7e8"}
 
 
 def _num(v):
@@ -72,7 +72,8 @@ def timeline(path: Path, rid: str, rows: list[dict], varied: list[str], rec_end:
             col = TYPE_COLOURS.get(r["trial_type"], "#4c72b0")
         edge = "#d62728" if r["event_id"] in overlaps else "none"
         ax.broken_barh([(on, dur)], (y - 0.38, 0.76), facecolors=col, edgecolors=edge,
-                       linewidth=1.5 if edge != "none" else 0, alpha=0.95 if r["trial_type"] != "condition" else 0.5)
+                       linewidth=1.5 if edge != "none" else 0, alpha=0.95 if r["trial_type"] != "condition" else 0.5,
+                       hatch="///" if r["trial_type"] == "block" else None)
     ticks = list(range(n_lanes)) + ([extra_lane] if used_extra else [])
     labels = lane_label + (["no " + (lane_key or "lane")] if used_extra else [])
     ax.set_yticks(ticks)
@@ -92,6 +93,10 @@ def timeline(path: Path, rid: str, rows: list[dict], varied: list[str], rec_end:
         sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
         cb = fig.colorbar(sm, ax=ax, pad=0.01)
         cb.set_label(f"amplitude ({unit})" if unit and unit != "n/a" else "amplitude (unit unknown)", fontsize=8)
+    if n_bl:
+        from matplotlib.patches import Patch  # noqa: PLC0415
+        ax.legend(handles=[Patch(facecolor=TYPE_COLOURS["block"], hatch="///", label="block (e.g. kilohertz)")],
+                  loc="upper left", fontsize=7, framealpha=0.8)
     ax.grid(axis="x", alpha=0.3)
     fig.text(0.01, 0.01, RESEARCH, fontsize=7, color="#555555")
     fig.tight_layout()
