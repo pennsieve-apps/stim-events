@@ -1,0 +1,15 @@
+# local data: fixtures, outputs and real recordings (anchored: validation/data/ stays tracked)
+/data/
+*.nwb
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

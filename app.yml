@@ -1,0 +1,190 @@
+# yaml-language-server: $schema=https://schemas.pennsieve.io/app-manifest/v1.json
+schemaVersion: "1.0"
+application:
+  name: Stimulation Events
+  description: >-
+    Finds the stimulation epochs of physiological recordings and their parameters (amplitude and
+    unit, pulse width, pulse rate, train duration, duty cycle, number of pulses, polarity, waveform,
+    site, condition) and writes them as one BIDS-style events.tsv, for nerve stimulation and
+    neuromodulation experiments in any species. Reads trigger/TTL lines (pulses grouped into
+    trains), stimulus monitors (amplitude, width, polarity from the waveform), and parameter envelope
+    channels (e.g. a closed-loop controller's amplitude, with stimulation and kilohertz block told
+    apart by sign) of physio-import's NWB files; per-trial parameters stored with the recording;
+    parameter tables (CSV/XLSX) described by a stim-map.yaml; imported markers; file and folder
+    names; and, optionally, SPARC Data Structure metadata. Sources are merged by priority; QC lists
+    overlapping trains, trains without a clean baseline before them and table vs channel
+    disagreements; a timeline figure per recording. Research outputs.
+  type: processor
+  tags:
+    - physiology
+    - autonomic
+    - cardiovascular
+    - neuromodulation
+    - nerve-stimulation
+    - vagus-nerve-stimulation
+    - electrophysiology
+    - nwb
+    - quality-control
+runtime:
+  # One recording at a time, every channel read in 1M-sample slices. Measured in Docker (amd64
+  # emulation on an M-series Mac, --cpus 1 --memory 2g) on the demo data (README "Runtime"): peak
+  # 165 MB, under 2 s per dataset.
+  # Single-threaded.
+  cpu: 512
+  memory: 1024
+  computeTypes:
+    - standard
+  timeoutSeconds: 900
+parameters:
+  - name: TRAIN_GAP_S
+    type: number
+    label: Train gap (s)
+    description: >-
+      Trigger and monitor channels: pulses further apart than this start a new train. Keep it above the
+      longest interval between pulses of one train (0.5 s at 2 Hz) and below the shortest pause between
+      trains.
+    defaultValue: 2
+    min: 0.001
+  - name: PULSE_MERGE_S
+    type: number
+    label: Pulse merge window (s)
+    description: >-
+      Threshold crossings closer than this belong to one pulse (the two phases of a biphasic pulse, or the
+      start and end blips some systems write for each pulse). Three or more crossings at 1 kHz or faster
+      are a kilohertz burst, written as a block epoch.
+    defaultValue: 0.002
+    min: 0
+  - name: TRIGGER_THRESHOLD
+    type: string
+    label: Trigger threshold
+    description: >-
+      auto (60 % of the way from the resting to the active level of a trigger line; for a stimulus monitor,
+      10 times its noise and at least 2 % of the largest pulse) or a number in the channel's unit.
+    defaultValue: auto
+  - name: ENVELOPE_THRESHOLD
+    type: string
+    label: Envelope threshold
+    description: >-
+      Envelope channels (a stimulation parameter recorded over time): an epoch is where the absolute value
+      is above this. auto = 10 % of the channel's largest value; or a number in the channel's unit.
+    defaultValue: auto
+  - name: ENVELOPE_GAP_S
+    type: number
+    label: Envelope gap (s)
+    description: >-
+      Envelope epochs of the same sign closer than this are joined; missing samples count as off (some
+      exports keep the value only around each pulse).
+    defaultValue: 5
+    min: 0
+  - name: ENVELOPE_STEP
+    type: number
+    label: Envelope step
+    description: >-
+      An envelope epoch is split where its 1 s median changes by more than this fraction of its level (a
+      stepped amplitude series without pauses becomes one row per step).
+    defaultValue: 0.25
+    min: 0.01
+  - name: MIN_GAP_S
+    type: number
+    label: Minimum baseline gap (s)
+    description: >-
+      Trains that start less than this after the previous train ends (or after the recording starts) are
+      listed in qc.csv: a baseline window of this length before them would not be clean.
+    defaultValue: 10
+    min: 0
+  - name: MATCH_TOLERANCE_S
+    type: number
+    label: Match tolerance (s)
+    description: >-
+      A table row, NWB row or marker with a single time is matched to the detected train whose onset is
+      within this many seconds; rows with a window (start and stop) take the train inside the window.
+    defaultValue: 2
+    min: 0
+  - name: MARKER_PATTERN
+    type: string
+    label: Marker pattern
+    description: >-
+      Which imported markers are stimulations and what their text says. auto: markers whose text names a
+      stimulation (stim, VNS, train, pulse, block, ...) or carries values with units (1.5mA, 20 Hz, 250us);
+      "on"/"off" markers are paired into one epoch; "baseline" markers become baseline rows. none: ignore
+      markers. Or a regular expression with named groups, e.g. Stim (?P<amplitude_mA>[\d.]+) mA
+      (?P<frequency_hz>\d+) Hz.
+    defaultValue: auto
+  - name: NAME_PATTERN
+    type: string
+    label: File name pattern
+    description: >-
+      Parameters in the recording's source file and folder names. auto: values with units
+      (100uA_200us.abf, 10 Hz folder names). none: ignore names. Or a regular expression with named
+      groups applied to the source path, e.g. (?P<amplitude_uA>\d+)uA_(?P<pulse_width_us>\d+)us or
+      (?P<condition>gain\d+).
+    defaultValue: auto
+  - name: USE_SDS
+    type: boolean
+    label: Use SDS metadata
+    description: >-
+      Read stimulation parameters from SPARC Data Structure manifest, performances, samples and subjects
+      files placed in the params input (lowest priority, optional).
+    defaultValue: true
+  - name: FIGURES
+    type: boolean
+    label: Figures
+    description: Write one timeline figure per recording.
+    defaultValue: true
+  - name: THREADS
+    type: integer
+    label: Threads
+    description: BLAS threads; 0 = from the container's CPU quota, capped by its memory.
+    defaultValue: 0
+    min: 0
+inputs:
+  - name: physio
+    description: >-
+      The physio output of physio-import (recordings.csv, channels.csv, events.tsv and one NWB file per
+      recording), or any NWB files. Stimulation channels are the channels of type stim in channels.csv
+      (without it: stim* names, names like TTL/trigger, or /stimulus/presentation).
+    mediaTypes:
+      - application/x-hdf5; profile=nwb
+      - text/csv
+      - text/tab-separated-values
+      - application/json
+    placement: subfolder
+    required: true
+  - name: params
+    description: >-
+      Optional: parameter tables (CSV, TSV or XLSX; one row per train, per trial or per recording), a
+      stim-map.yaml that says how to read them and the stimulation channels, and SPARC Data Structure
+      metadata (manifest.xlsx, performances.xlsx, samples.xlsx, subjects.xlsx).
+    mediaTypes:
+      - text/csv
+      - text/tab-separated-values
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/octet-stream
+    placement: subfolder
+    required: false
+outputs:
+  - name: events
+    description: >-
+      stim-events/: events.tsv (one row per stimulation train, block, baseline or condition epoch, with its
+      parameters and their source), stim_summary.csv, qc.csv, features.csv, figures/*_timeline.png,
+      summary.json and provenance.json.
+    mediaTypes:
+      - text/tab-separated-values
+      - text/csv
+      - application/json
+      - image/png
+
+# How a release is tested before it is made public: the inputs a review run uses.
+# See app-deploy-service docs/app-manifest-review.md. The generator writes physio/, params/ and
+# truth.json; each port takes its own subtree.
+review:
+  version: 1
+  inputs:
+    physio:
+      generate:
+        command: python -m tests.make_fixture "$REVIEW_INPUT_DIR"
+        root: physio
+    params:
+      generate:
+        command: python -m tests.make_fixture "$REVIEW_INPUT_DIR"
+        root: params

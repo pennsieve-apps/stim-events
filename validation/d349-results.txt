@@ -1,0 +1,5 @@
+trials in the file: 20; stimulation rows: 20
+parameters equal to the attributes (and n_pulses = rate x duration): 20/20
+onset - trial group time: median -13.0 ms, range -14.2 to -11.6 ms
+table vs trigger disagreements (rate > 10 %, width > 20 %, duration > 0.5 s, pulses > 10 %): 0
+trains with less than MIN_GAP_S before them: 7
