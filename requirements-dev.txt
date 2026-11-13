@@ -1,0 +1,5 @@
+-r requirements.txt
+# tests: pytest; pynwb writes the fixture's NWB files as physio-import does (without it the fixture
+# generator writes the same layout with h5py)
+pytest==9.2.0
+pynwb==4.2.0
