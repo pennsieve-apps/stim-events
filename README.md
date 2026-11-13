@@ -34,7 +34,7 @@ read with h5py in 1-million-sample slices, so a 30 kHz trigger line of hours nev
 
 | Port | Placement | What |
 |---|---|---|
-| `physio` | subfolder, required | physio-import's `physio` output: `recordings.csv`, `channels.csv`, `events.tsv` (markers) and one NWB file per recording. Any NWB files also work: without `channels.csv`, stimulation channels are found by name (`stim*`, TTL, trigger, ...) or under `/stimulus/presentation`. |
+| `physio` | subfolder, required | physio-import's `physio` output: `recordings.csv`, `channels.csv`, `events.tsv` (markers) and one NWB file per recording. Stimulation channels are those of type `stim`; a processed copy (`derived_from` naming another stim channel) is left out so no train counts twice. Any NWB files also work: without `channels.csv`, stimulation channels are found by name (`stim*`, TTL, trigger, pulse train, ...; a bare `pulse` is a finger-pulse transducer, not a stimulus line) or under `/stimulus/presentation`. |
 | `params` | subfolder, optional | Parameter tables (CSV, TSV, XLSX), a `stim-map.yaml`, SPARC Data Structure `manifest.xlsx` / `performances.xlsx` / `samples.xlsx` / `subjects.xlsx`. |
 
 Files are found by name and content, recursively, following symlinks; the two ports may also be
@@ -90,7 +90,12 @@ A higher source's value wins; a lower source only fills what is missing.
 A table row, NWB row or marker matched to a detected train takes the train's timing (a channel
 places a train to the sample; a log is usually rounded and a trial table gives the trial window),
 and the row's parameters; rows that match no train are placed at their own time (and listed in
-`qc.csv`). When nothing gives a time but a file name, SDS or table gives parameters, one
+`qc.csv`). Rows that give a trial *window* (as physio-import's `stimulation_source`, whose
+start/stop are the recorded window, not the train) are matched on their expected onset: window
+start + the offset at which most windows hold a train (10 s in dataset 349; `window_offset` in
+`qc.csv`). A window with no train there stays unmatched and is placed at its expected onset, so one
+failed stimulation never shifts the later rows onto the wrong trains, even when windows overlap and
+hold two trains; two candidate trains near one expected onset are flagged `ambiguous_match`. When nothing gives a time but a file name, SDS or table gives parameters, one
 `condition` row spans the recording. Baseline epochs are written only where a source marks them;
 otherwise stim-dose-response takes its own pre-stimulus window. A recording with no stimulation
 source at all is listed as `skipped` in `provenance.json` (not a failure).
@@ -235,7 +240,14 @@ recording whose parameters are only in its file name.
 ## Licences
 
 This app: Apache-2.0. Bundled packages: BSD-3-Clause, MIT, MIT-CMU, Apache-2.0 and the Matplotlib
-licence (`THIRD_PARTY.md`). Demo data: CC BY 4.0 (Discover 349 and 655).
+licence. The wheels also carry native libraries: OpenBLAS (BSD-3-Clause), the GCC runtime
+`libgfortran` (GPL-3.0-or-later with the GCC Runtime Library Exception) and `libquadmath`
+(LGPL-2.1-or-later, a separate replaceable shared library) in NumPy; HDF5 (BSD-3-Clause) and libaec
+(BSD-2-Clause) in h5py; FreeType (FreeType License), HarfBuzz, libjpeg-turbo (IJG), libpng, zlib and
+others in Pillow; FreeType, Qhull and the DejaVu/STIX/Computer Modern fonts in Matplotlib; full list
+in `THIRD_PARTY.md`. Portions of this software are copyright © 2026 The FreeType Project
+(www.freetype.org). All rights reserved. This software is based in part on the work of the
+Independent JPEG Group. Demo data: CC BY 4.0 (Discover 349 and 655).
 
 ## Citations
 

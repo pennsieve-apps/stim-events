@@ -1,21 +1,24 @@
 """
 Compare stim-events' events.tsv for Discover dataset 349 (pig VNS grid) with the source file.
 
-Truth per trial, from subject-<n>.hdf5: the group name is the stimulation onset (local wall clock),
+Truth per trial, from subject-<n>.hdf5: the group name is the stimulation time (local wall clock),
 the group attributes give current_uA, frequency_Hz, pulse_width_us, duration_s, polarity and
-stim_shape. physio-import's recordings.csv start_time (same clock) places the onset in seconds.
+stim_shape. Times are placed on the recording's time axis with the source's own time stamps (Unix
+seconds, UTC): t = 0 is the earliest time stamp of any dataset (as physio-import sets it), and the
+group name is converted to UTC with the whole-hour (30 min) offset between the names and the time
+stamps. recordings.csv start_time is not used: it is rounded to the millisecond.
 The trigger-derived values (rate, pulse count, train duration, pulse width from the blips) are read
 from the train the trigger channel gives, i.e. before the table overrides them: run stim-events a
 second time on the physio folder with the NWB stimulation_source table hidden is not needed,
 because qc.csv lists every table vs channel disagreement; none means they agree within tolerance.
 
-Usage: python validation/validate_349.py <subject.hdf5> <physio dir> <stim-events dir>
+Usage: python validation/validate_349.py <subject.hdf5> <physio dir (unused, kept for the call)> <stim-events dir>
 """
 from __future__ import annotations
 
 import csv
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import h5py
@@ -23,16 +26,22 @@ import numpy as np
 
 
 def main(h5: str, physio: str, out: str) -> int:
-    recs = list(csv.DictReader(open(Path(physio) / "recordings.csv")))
     ev = [r for r in csv.DictReader(open(Path(out) / "events.tsv"), delimiter="\t") if r["trial_type"] == "stimulation"]
     qc = list(csv.DictReader(open(Path(out) / "qc.csv")))
-    t0 = datetime.fromisoformat(recs[0]["start_time"])
     truth = []
     with h5py.File(h5, "r") as f:
+        firsts, groups = [], []
         for subj in f:
             for g in f[subj]:
-                a = dict(f[subj][g].attrs)
-                truth.append(((datetime.fromisoformat(g) - t0).total_seconds(), a))
+                grp = f[subj][g]
+                t_first = min(float(grp[d][0, 0]) for d in grp)       # column 0 = timestamps
+                firsts.append(t_first)
+                groups.append((g, t_first, dict(grp.attrs)))
+        t_ref = min(firsts)
+        for g, t_first, a in groups:
+            naive = datetime.fromisoformat(g).replace(tzinfo=timezone.utc).timestamp()
+            tz = round((naive - t_first) / 1800.0) * 1800.0             # local - UTC, whole half hours
+            truth.append((naive - tz - t_ref, a))
     truth.sort(key=lambda x: x[0])
     print(f"trials in the file: {len(truth)}; stimulation rows: {len(ev)}")
     d_on, ok = [], 0

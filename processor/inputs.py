@@ -28,7 +28,9 @@ log = logging.getLogger("stim-events")
 NWB_SUFFIXES = (".nwb",)
 TABLE_SUFFIXES = (".csv", ".tsv", ".xlsx", ".xlsm")
 SDS_NAMES = ("manifest", "samples", "performances", "subjects")
-STIM_NAME = re.compile(r"stim|trig|ttl|marker|pulse|sync|timing|ctrl.?amp", re.IGNORECASE)
+# stimulation-line names when there is no channels.csv (conventions.md: a bare "pulse" is a finger
+# pulse / PPG transducer, not a stimulus line)
+STIM_NAME = re.compile(r"stim|trig|ttl|marker|pulse.?train|sync|timing|ctrl.?amp", re.IGNORECASE)
 
 
 # --------------------------------------------------------------------------- file discovery
@@ -361,7 +363,10 @@ def find_physio(root: Path) -> PhysioInput:
 def stim_channels(nf: NwbFile, rec: Recording) -> list[tuple[Channel, dict]]:
     """The stimulation channels of a recording: channels.csv type `stim`; without channels.csv, names
     `stim*` (physio-import's naming), names that look like a stimulus line, or anything under
-    /stimulus/presentation."""
+    /stimulus/presentation. A processed copy of a stimulation channel (channels.csv `derived_from`
+    naming another stim channel of the recording) is left out: the raw channel is read instead, so a
+    train is never counted twice; a derived channel without a raw sibling (`derived_from` unknown or
+    naming a channel that is not there) is used."""
     out = []
     for ch in nf.channels():
         base = ch.name.split("[")[0]
@@ -374,7 +379,15 @@ def stim_channels(nf: NwbFile, rec: Recording) -> list[tuple[Channel, dict]]:
                        or bool(STIM_NAME.search(base)) or bool(STIM_NAME.search(ch.description)))
         if is_stim:
             out.append((ch, row))
-    return out
+    names = {ch.name.split("[")[0] for ch, _ in out}
+    kept = []
+    for ch, row in out:
+        src = (row.get("derived_from") or "").strip()
+        if src and src.lower() != "unknown" and src in names and src != ch.name.split("[")[0]:
+            log.info("%s: channel %s is derived from %s: the raw channel is used", rec.recording_id, ch.name, src)
+            continue
+        kept.append((ch, row))
+    return kept
 
 
 # --------------------------------------------------------------------------- params port

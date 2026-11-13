@@ -613,7 +613,9 @@ def process(rec: I.Recording, prm: dict, smap: SM.StimMap, tables: TableSet, sds
         nonlocal events
         stim_recs = [r for r in records if r.params.get("trial_type") != "baseline"]
         base_recs = [r for r in records if r.params.get("trial_type") == "baseline"]
-        pairs, left = M.match_records(stim_recs, events, prm["tol"])
+        pairs, left, notes = M.match_records(stim_recs, events, prm["tol"])
+        for check, value, note in notes:
+            qc.append([rid, check, value, f"{label}: {note}"])
         for r, ev in pairs:
             ev.add(r.source, r.params, r.extras, r.origin)
         for r in left:
@@ -622,10 +624,16 @@ def process(rec: I.Recording, prm: dict, smap: SM.StimMap, tables: TableSet, sds
                 continue
             ev = M.event_from_record(r)
             events.append(ev)
+            if not has_channel and r.stop is not None and r.stop > r.start + prm["tol"] \
+                    and r.params.get("train_duration_s") is not None:
+                qc.append([rid, "window_timing", r.source,
+                           f"{r.origin}: no stimulation channel to place the train; onset = the start of the "
+                           f"row's window ({r.start:.3f} s), which may be before the train itself"])
             if has_channel:
+                where = (f"placed at its expected onset {r.expected:.3f} s (window start + the common offset)"
+                         if r.expected is not None else "placed at its own time")
                 qc.append([rid, "unmatched_row", r.source,
-                           f"{r.origin}: no detected train within {prm['tol']:g} s (or inside its window); placed at "
-                           "its own time"])
+                           f"{r.origin}: no detected train within {prm['tol']:g} s of where it should be; {where}"])
         for r in base_recs:
             if r.start is not None:
                 events.append(M.event_from_record(r))
@@ -910,7 +918,8 @@ def main() -> int:
         w = csv.writer(fh, delimiter="\t", lineterminator="\n")
         w.writerow(P.EVENT_COLUMNS + extra_cols)
         for r in all_rows:
-            w.writerow([P.fmt(r.get(c)) for c in P.EVENT_COLUMNS + extra_cols])
+            w.writerow([(f"{r[c]:.6f}" if c in ("onset", "duration") and isinstance(r.get(c), (int, float))
+                         else P.fmt(r.get(c))) for c in P.EVENT_COLUMNS + extra_cols])
     for name, header, data in (("stim_summary.csv", SUMMARY_HEADER, summaries), ("qc.csv", QC_HEADER, qc),
                                ("features.csv", FEATURE_HEADER, features)):
         with open(out / name, "w", newline="", encoding="utf-8") as fh:

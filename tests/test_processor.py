@@ -259,3 +259,86 @@ def test_tokens():
     assert P.parse_tokens("sub-01_ses-2_rec-1") == {}
     assert P.norm_waveform("biphasicwithdeadzone") == "biphasic-interphase"
     assert P.norm_polarity("Cathodic-first") == "cathodic"
+
+
+def _write_dataset(root: Path, rec, extra_channel_cols: dict | None = None) -> None:
+    """One recording written as physio-import would (h5py writer), with recordings.csv and channels.csv."""
+    (root / "sub-X").mkdir(parents=True)
+    make_fixture.write_h5py(rec, root / "sub-X" / f"{rec.rid}.nwb")
+    with open(root / "recordings.csv", "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["recording_id", "subject", "path", "species", "duration_s", "source_format", "source_path"])
+        w.writerow([rec.rid, rec.subject, f"sub-X/{rec.rid}.nwb", rec.species, round(rec.duration(), 3),
+                    rec.source_format, rec.source_path])
+    rows = [dict(c, **(extra_channel_cols or {}).get(c["channel"], {})) for c in rec.channels]
+    keys = list(dict.fromkeys(k for r in rows for k in r))
+    with open(root / "channels.csv", "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=keys, restval="")
+        w.writeheader()
+        w.writerows(rows)
+
+
+def _trials_rec(missing: int | None, derived: bool = False):
+    """8 trials every 12 s, 25 s windows (they overlap), a 10 Hz 5 s train 10 s into each window."""
+    import numpy as np
+    starts = [12.0 * k for k in range(8)]
+    amps = [100 * (k + 1) for k in range(8)]
+    fs = 2000.0
+    n = int((starts[-1] + 25.0) * fs)
+    ttl = np.zeros(n, dtype=np.int16)
+    for k, s in enumerate(starts):
+        if k == missing:
+            continue
+        for p in range(50):
+            ttl[int(round((s + 10.0 + p / 10.0) * fs))] = 1
+    r = make_fixture.Rec("sub-X_rec-win", "X", "pig", "Sus scrofa", "primary/sub-X/x.hdf5", "hdf5")
+    r.add("stim", ttl * 5, "V", fs, typ="stim", original="stim_timing")
+    if derived:
+        r.add("stim-2", ttl * 5, "V", fs, typ="stim", original="stim_timing processed")
+    r.intervals["stimulation_source"] = ("per-trial parameters", {
+        "start_time": starts, "stop_time": [s + 25.0 for s in starts], "current_uA": amps,
+        "frequency_Hz": [10.0] * 8, "duration_s": [5.0] * 8})
+    return r, starts, amps
+
+
+def test_window_rows_with_a_missing_train(tmp_path, monkeypatch):
+    """A failed stimulation must not shift the later rows' parameters onto the wrong trains."""
+    rec, starts, amps = _trials_rec(missing=2)
+    _write_dataset(tmp_path / "in", rec)
+    assert run(monkeypatch, tmp_path / "in", tmp_path / "o", FIGURES="false") == 0
+    out = tmp_path / "o" / "stim-events"
+    got = ev(out, "sub-X_rec-win", "stimulation")
+    assert len(got) == 8
+    for g, s, a in zip(got, starts, amps):
+        assert abs(f(g["onset"]) - (s + 10.0)) < 1e-3
+        assert f(g["amplitude"]) == a
+    assert got[2]["source"] == "hdf5-attrs"                    # the row without a train, at its expected onset
+    assert all(g["source"] == "hdf5-attrs|trigger" for i, g in enumerate(got) if i != 2)
+    qc = rows(out / "qc.csv")
+    assert any(q["check"] == "unmatched_row" and "row 2" in q["note"] for q in qc)
+    off = [q for q in qc if q["check"] == "window_offset"]
+    assert off and abs(float(off[0]["value"]) - 10.0) < 1e-3
+    # fixed decimals: millisecond-and-better resolution whatever the size of the number
+    line = (out / "events.tsv").read_text().splitlines()[1].split("\t")
+    assert line[1] == "10.000000" and line[2] == "5.000000"
+
+
+def test_derived_stim_copy_is_ignored(tmp_path, monkeypatch):
+    rec, starts, _ = _trials_rec(missing=None, derived=True)
+    _write_dataset(tmp_path / "in", rec, {"stim": {"derived_from": ""}, "stim-2": {"derived_from": "stim"}})
+    assert run(monkeypatch, tmp_path / "in", tmp_path / "o", FIGURES="false") == 0
+    got = ev(tmp_path / "o" / "stim-events", "sub-X_rec-win", "stimulation")
+    assert len(got) == len(starts)
+
+
+def test_bare_pulse_is_not_a_stimulus_line(tmp_path, monkeypatch):
+    """Without channels.csv a channel named 'pulse' (a finger-pulse transducer) is not read as stim."""
+    import numpy as np
+    fs = 100.0
+    t = np.arange(int(60 * fs)) / fs
+    r = make_fixture.Rec("sub-P_rec-1", "P", "human", "Homo sapiens", "raw/p.acq", "acq")
+    r.add("pulse", (np.sin(2 * np.pi * 1.2 * t) > 0.9).astype(np.float32), "a.u.", fs, typ="ppg", original="Pulse")
+    (tmp_path / "in").mkdir()
+    make_fixture.write_h5py(r, tmp_path / "in" / "p.nwb")
+    assert run(monkeypatch, tmp_path / "in", tmp_path / "o", FIGURES="false", NAME_PATTERN="none") == 0
+    assert len((tmp_path / "o" / "stim-events" / "events.tsv").read_text().splitlines()) == 1
